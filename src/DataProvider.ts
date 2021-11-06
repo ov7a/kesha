@@ -11,7 +11,7 @@ class WordMetadata {
 }
 
 async function getWordMeta(word: String): Promise<Array<WordMetadata>> {
-    let url = `https://api.dictionaryapi.dev/api/v2/entries/en/${word}`; //FIXME: sanitize
+    let url = `https://api.dictionaryapi.dev/api/v2/entries/en/${encodeURIComponent(word.trim())}`;
     
     try {
         const response = await fetch(url);
