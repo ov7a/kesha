@@ -1,13 +1,10 @@
 <script lang="ts">
+	import { onMount } from "svelte";
+	import { Writable, writable } from "svelte/store";
+
 	import { getPronunciation } from './DataProvider';
 	import Waveform from "./Waveform.svelte";
-	import { Writable, writable } from "svelte/store";
-	import { onMount } from "svelte";
-	import AudioRecorder from 'audio-recorder-polyfill';
-
-	if (!window.MediaRecorder){ //polyfill
-		window.MediaRecorder = AudioRecorder;
-	}
+	import RecordButton from './RecordButton.svelte';
 
 	export let word: string;
 
@@ -19,40 +16,20 @@
 	var userPronunciationZoom: Writable<number> = writable(1);
 	var zoomInSync = true;
 
-	var currentRecoder: MediaRecorder;
-	var recordingInProgress = false;
-
 	async function getWord(){
 		let pronunciation = await getPronunciation(word);
 
 		phonetic = pronunciation.phonetic;
 
 		referencePronunciation.empty();
+		userPronunciation.empty();
 		if (pronunciation.audio){
 			referencePronunciation.load(pronunciation.audio);
 		}		
 	}
 
-	async function startRecording() {
-		let stream = await navigator.mediaDevices.getUserMedia({audio: true});
-
-		currentRecoder = new MediaRecorder(stream);
-		currentRecoder.addEventListener('dataavailable', event => {
-			userPronunciation.load(URL.createObjectURL(event.data));
-		});
-		currentRecoder.start();
-		recordingInProgress = true;
-	}
-
-	function stopRecording() {				
-		currentRecoder.stream.getTracks().forEach(track => track.stop());
-		currentRecoder.stop();
-		recordingInProgress = false;
-	}
-
-	async function askRecordingPermission(){
-		let stream = await navigator.mediaDevices.getUserMedia({audio: true})
-		stream.getTracks().forEach(track => track.stop());
+	function displayRecording(url: string){
+		userPronunciation.load(url);
 	}
 
 	function maybeUpdateZoom(writable: Writeable<number>, value: number){
@@ -61,8 +38,7 @@
 		}
 	}
 
-	onMount(() => {
-		askRecordingPermission();
+	onMount(() => { //can be done with events, but whatever
 		referencePronunciationZoom.subscribe(value => maybeUpdateZoom(userPronunciationZoom, value))
 		userPronunciationZoom.subscribe(value => maybeUpdateZoom(referencePronunciationZoom, value))
 	});
@@ -74,24 +50,21 @@
 	<input type="button" on:click="{getWord}" value="get">
 	
 	<div class:hidden={!(phonetic && phonetic.length > 0)}>
-		<p contenteditable="true">[{phonetic}]</p>
-		<Waveform bind:this={referencePronunciation} waveColor="pink" progressColor="lightgreen" bind:zoom={$referencePronunciationZoom}/>
-	</div>
-	<div>
-		<input type="button"  
-			class:active={recordingInProgress} 
-			on:touchstart="{startRecording}" 
-			on:touchend="{event => {stopRecording(); event.preventDefault()}}" 
-			on:mousedown="{startRecording}"
-			on:mouseup="{stopRecording}"
-			value="hold to record">	
+		<div>
+			<p contenteditable="true">[{phonetic}]</p>
+			<Waveform bind:this={referencePronunciation} waveColor="pink" progressColor="lightgreen" bind:zoom={$referencePronunciationZoom}/>
+		</div>
 
-		<Waveform bind:this={userPronunciation} waveColor="green" progressColor="blue" bind:zoom={$userPronunciationZoom}/>
+		<RecordButton on:recordComplete={e => displayRecording(e.detail)}/>
+			
+		<div>
+			<Waveform bind:this={userPronunciation} waveColor="green" progressColor="blue" bind:zoom={$userPronunciationZoom}/>
 
-		<label>
-			<input type="checkbox" bind:checked="{zoomInSync}"/>
-			keep zoom the same
-		</label>
+			<label>
+				<input type="checkbox" bind:checked="{zoomInSync}"/>
+				keep zoom the same
+			</label>
+		</div>	
 	</div>
 
 	<p>NOTE: this is an MVP and works... barely.</p>
@@ -111,9 +84,6 @@
 		padding: 1em;
 		max-width: 800px;
 		margin: 0 auto;
-	}
-	input.active {
-		background-color: red;
 	}
 	.hidden {
 		display: none;
