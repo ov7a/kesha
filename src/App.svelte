@@ -8,7 +8,7 @@
 
 	export let word: string;
 
-	var phonetic: string;
+	var phonetic: string | null = null;
 
 	var referencePronunciation: Waveform;
 	var referencePronunciationZoom: Writable<number> = writable(1)
@@ -16,8 +16,18 @@
 	var userPronunciationZoom: Writable<number> = writable(1);
 	var zoomInSync = true;
 
+	var errorMessage: string | null = null;
+
 	async function getWord(){
-		let pronunciation = await getPronunciation(word);
+		let pronunciation;
+		try {
+			pronunciation = await getPronunciation(word);
+			errorMessage = null;
+		} catch (error) {
+			phonetic = null;
+			errorMessage = error.message;
+			return
+		}
 
 		phonetic = pronunciation.phonetic;
 
@@ -49,7 +59,7 @@
 	<input type="text" bind:value="{word}">
 	<input type="button" on:click="{getWord}" value="get">
 	
-	<div class:hidden={!(phonetic && phonetic.length > 0)}>
+	<div class:hidden={phonetic == null || phonetic.length == 0}>
 		<div>
 			<p contenteditable="true">[{phonetic}]</p>
 			<Waveform bind:this={referencePronunciation} waveColor="pink" progressColor="lightgreen" bind:zoom={$referencePronunciationZoom}/>
@@ -65,6 +75,11 @@
 				keep zoom the same
 			</label>
 		</div>	
+	</div>
+
+	<div class:hidden={errorMessage == null}>
+		<p>Oops, something went wrong:</p>
+		<p contenteditable="true">{errorMessage}</p>
 	</div>
 
 	<p>NOTE: this is an MVP and works... barely.</p>
