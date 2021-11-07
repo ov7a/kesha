@@ -1,4 +1,4 @@
 export class Pronunciation {
-    phonetic: string;
-    audio: string | null;
+	phonetic: string;
+	audio: string | null;
 }

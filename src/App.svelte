@@ -1,9 +1,9 @@
 <script lang="ts">
-	import { onMount } from "svelte";
-	import { Writable, writable } from "svelte/store";
+	import { onMount } from 'svelte';
+	import { Writable, writable } from 'svelte/store';
 
 	import { getPronunciation } from './DataProvider';
-	import Waveform from "./Waveform.svelte";
+	import Waveform from './Waveform.svelte';
 	import RecordButton from './RecordButton.svelte';
 
 	export let word: string;
@@ -11,14 +11,14 @@
 	var phonetic: string | null = null;
 
 	var referencePronunciation: Waveform;
-	var referencePronunciationZoom: Writable<number> = writable(1)
+	var referencePronunciationZoom: Writable<number> = writable(1);
 	var userPronunciation: Waveform;
 	var userPronunciationZoom: Writable<number> = writable(1);
 	var zoomInSync = true;
 
 	var errorMessage: string | null = null;
 
-	async function getWord(){
+	async function getWord() {
 		let pronunciation;
 		try {
 			pronunciation = await getPronunciation(word);
@@ -26,58 +26,59 @@
 		} catch (error) {
 			phonetic = null;
 			errorMessage = error.message;
-			return
+			return;
 		}
 
 		phonetic = pronunciation.phonetic;
 
 		referencePronunciation.empty();
 		userPronunciation.empty();
-		if (pronunciation.audio){
+		if (pronunciation.audio) {
 			referencePronunciation.load(pronunciation.audio);
-		}		
+		}
 	}
 
-	function displayRecording(url: string){
+	function displayRecording(url: string) {
 		userPronunciation.load(url);
 	}
 
-	function maybeUpdateZoom(writable: Writeable<number>, value: number){
-		if (zoomInSync){
+	function maybeUpdateZoom(writable: Writeable<number>, value: number) {
+		if (zoomInSync) {
 			writable.set(value);
 		}
 	}
 
-	onMount(() => { //can be done with events, but whatever
-		referencePronunciationZoom.subscribe(value => maybeUpdateZoom(userPronunciationZoom, value))
-		userPronunciationZoom.subscribe(value => maybeUpdateZoom(referencePronunciationZoom, value))
+	onMount(() => {
+		//can be done with events, but whatever
+		referencePronunciationZoom.subscribe((value) => maybeUpdateZoom(userPronunciationZoom, value));
+		userPronunciationZoom.subscribe((value) => maybeUpdateZoom(referencePronunciationZoom, value));
 	});
 </script>
 
 <main>
 	<h1>Pronunciation of</h1>
-	<input type="text" bind:value="{word}">
-	<input type="button" on:click="{getWord}" value="get">
-	
-	<div class:hidden={phonetic == null || phonetic.length == 0}>
+	<input type="text" bind:value="{word}" />
+	<input type="button" on:click="{getWord}" value="get" />
+
+	<div class:hidden="{phonetic == null || phonetic.length == 0}">
 		<div>
 			<p contenteditable="true">[{phonetic}]</p>
-			<Waveform bind:this={referencePronunciation} waveColor="pink" progressColor="lightgreen" bind:zoom={$referencePronunciationZoom}/>
+			<Waveform bind:this="{referencePronunciation}" waveColor="pink" progressColor="lightgreen" bind:zoom="{$referencePronunciationZoom}" />
 		</div>
 
-		<RecordButton on:recordComplete={e => displayRecording(e.detail)}/>
-			
+		<RecordButton on:recordComplete="{(e) => displayRecording(e.detail)}" />
+
 		<div>
-			<Waveform bind:this={userPronunciation} waveColor="green" progressColor="blue" bind:zoom={$userPronunciationZoom}/>
+			<Waveform bind:this="{userPronunciation}" waveColor="green" progressColor="blue" bind:zoom="{$userPronunciationZoom}" />
 
 			<label>
-				<input type="checkbox" bind:checked="{zoomInSync}"/>
+				<input type="checkbox" bind:checked="{zoomInSync}" />
 				keep zoom the same
 			</label>
-		</div>	
+		</div>
 	</div>
 
-	<div class:hidden={errorMessage == null}>
+	<div class:hidden="{errorMessage == null}">
 		<p>Oops, something went wrong:</p>
 		<p contenteditable="true">{errorMessage}</p>
 	</div>
