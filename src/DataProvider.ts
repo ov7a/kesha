@@ -36,7 +36,7 @@ export async function getPronunciation(word: string): Promise<Pronunciation> {
 	if (phoneticWithAudio) {
 		return {
 			phonetic: phoneticWithAudio.text,
-			audio: `https://api.allorigins.win/raw?url=${encodeURIComponent('https://' + phoneticWithAudio.audio)}`
+			audio: `https://api.allorigins.win/raw?url=${encodeURIComponent(phoneticWithAudio.audio)}`
 		};
 	} else {
 		return {
