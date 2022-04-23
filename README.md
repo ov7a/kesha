@@ -2,6 +2,7 @@
 
 This project allows you to compare your pronunciation with sample. This is an MVP project made with [Svelte](https://svelte.dev). 
 
+[Demo](https://ov7a.github.io/kesha/)
 
 ## Get started
 
